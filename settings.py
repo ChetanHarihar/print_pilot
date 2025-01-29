@@ -1,9 +1,12 @@
 import customtkinter as ctk
+import tkinter as tk
 from tkinter import filedialog, messagebox
+import os
+from PIL import Image, ImageTk
 
 
-WINDOW_WIDTH = 1000
-WINDOW_HEIGHT = 550
+WINDOW_WIDTH = 650
+WINDOW_HEIGHT = 620
 
 A4_SIZE = {"width": 8.27, "height": 11.69}
 
