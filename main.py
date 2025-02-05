@@ -32,12 +32,27 @@ class App(ctk.CTk):
         ctk.CTkLabel(master=file_sel_frame, text="Select file: ", font=("Arial", 14), fg_color="#E5E4E2").pack(side='left', padx=5)
 
         # Entry for file input
-        self.input_path = ctk.CTkEntry(master=file_sel_frame, font=("Arial", 14), fg_color="#E5E4E2", width=250)
+        self.input_path = ctk.CTkEntry(master=file_sel_frame, font=("Arial", 14), fg_color="white", width=250)
         self.input_path.pack(side='left', padx=5)
 
         # Button to add file
         self.add_file_btn = ctk.CTkButton(master=file_sel_frame, text="Add file", width=0, command=None)
         self.add_file_btn.pack(side='left', padx=5)
+
+        # folder selection frame
+        folder_sel_frame = ctk.CTkFrame(master=self, fg_color="#E5E4E2")
+        folder_sel_frame.pack(pady=10)
+
+        # Label for file selection
+        ctk.CTkLabel(master=folder_sel_frame, text="Select folder: ", font=("Arial", 14), fg_color="#E5E4E2").pack(side='left', padx=5)
+
+        # Entry for file input
+        self.output_path = ctk.CTkEntry(master=folder_sel_frame, font=("Arial", 14), fg_color="white", width=250)
+        self.output_path.pack(side='left', padx=5)
+
+        # Button to add file
+        self.sel_folder_btn = ctk.CTkButton(master=folder_sel_frame, text="Select folder", width=0, command=None)
+        self.sel_folder_btn.pack(side='left', padx=5)
 
         # color selection frame
         color_sel_frame = ctk.CTkFrame(master=self, fg_color="#E5E4E2")
