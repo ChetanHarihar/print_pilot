@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 
 
 WINDOW_WIDTH = 650
-WINDOW_HEIGHT = 620
+WINDOW_HEIGHT = 650
 
 A4_SIZE = {"width": 8.27, "height": 11.69}
 
