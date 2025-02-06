@@ -18,6 +18,10 @@ class App(ctk.CTk):
         self.init_ui()
 
     def init_ui(self):
+        self.selected_file_path = ''
+        self.output_folder_path = ''
+        self.selected_style = ''
+
         """
         Initialize the user interface.
         """
@@ -32,11 +36,11 @@ class App(ctk.CTk):
         ctk.CTkLabel(master=file_sel_frame, text="Select file: ", font=("Arial", 14), fg_color="#E5E4E2").pack(side='left', padx=5)
 
         # Entry for file input
-        self.input_path = ctk.CTkEntry(master=file_sel_frame, font=("Arial", 14), fg_color="white", width=250)
-        self.input_path.pack(side='left', padx=5)
+        self.input_file_path = ctk.CTkEntry(master=file_sel_frame, font=("Arial", 14), fg_color="white", width=300)
+        self.input_file_path.pack(side='left', padx=5)
 
         # Button to add file
-        self.add_file_btn = ctk.CTkButton(master=file_sel_frame, text="Add file", width=0, command=None)
+        self.add_file_btn = ctk.CTkButton(master=file_sel_frame, text="Add file", width=0, command=self.add_file)
         self.add_file_btn.pack(side='left', padx=5)
 
         # folder selection frame
@@ -47,11 +51,11 @@ class App(ctk.CTk):
         ctk.CTkLabel(master=folder_sel_frame, text="Select folder: ", font=("Arial", 14), fg_color="#E5E4E2").pack(side='left', padx=5)
 
         # Entry for file input
-        self.output_path = ctk.CTkEntry(master=folder_sel_frame, font=("Arial", 14), fg_color="white", width=250)
+        self.output_path = ctk.CTkEntry(master=folder_sel_frame, font=("Arial", 14), fg_color="white", width=300)
         self.output_path.pack(side='left', padx=5)
 
         # Button to add file
-        self.sel_folder_btn = ctk.CTkButton(master=folder_sel_frame, text="Select folder", width=0, command=None)
+        self.sel_folder_btn = ctk.CTkButton(master=folder_sel_frame, text="Select folder", width=0, command=self.add_folder)
         self.sel_folder_btn.pack(side='left', padx=5)
 
         # color selection frame
@@ -109,7 +113,7 @@ class App(ctk.CTk):
         self.load_styles()
 
         # Button to generate prints
-        self.generate_btn = ctk.CTkButton(master=self, text="Generate", font=('Arial', 14), command=None)
+        self.generate_btn = ctk.CTkButton(master=self, text="Generate", font=('Arial', 14), command=self.generate_print)
         self.generate_btn.pack(pady=(10,20))
 
     def on_canvas_configure(self, event):
@@ -187,12 +191,90 @@ class App(ctk.CTk):
         """
         # If the current checkbox is being checked
         if var.get() == "on":
+            self.selected_style = style_name
             # Uncheck all other checkboxes
             for checkbox_var in self.checkbutton_vars:
                 if checkbox_var != var:
                     checkbox_var.set("off")
+        else:
+            self.selected_style = ''
 
-        print(f"Style '{style_name}' selected: {var.get()}")
+    def add_file(self):
+        # Open a dialog to select a file
+        selected_file = tk.filedialog.askopenfilename(filetypes=[("Excel files", "*.xls *.xlsx")])
+        if selected_file:  # Ensure a file is selected
+            self.selected_file_path = selected_file
+            self.input_file_path.delete(0, "end")
+            self.input_file_path.insert(0, self.selected_file_path)
+
+    def add_folder(self):
+        # Open a dialog to select a folder
+        output_folder = tk.filedialog.askdirectory()
+        if output_folder:
+            self.output_folder_path = output_folder
+            self.output_path.delete(0, "end")
+            self.output_path.insert(0, self.output_folder_path)
+
+    def generate_print(self):
+        # check if it is a excel file
+        _, ext = os.path.splitext(self.selected_file_path)
+        isexcel = ext.lower() in (".xls", ".xlsx")
+        # check if the excel file path exists
+        if not os.path.exists(self.selected_file_path) and isexcel:
+            messagebox.showerror("Error", "Invalid file path or no file selected!")
+            return
+        # check if the output folder path exists
+        if not os.path.exists(self.output_folder_path):
+            messagebox.showerror("Error", "Invalid folder path or no folder selected!")
+            return
+        # get color
+        color = self.color_combobox.get()
+        # check style
+        if not self.selected_style:
+            messagebox.showerror("Error", "Select a style to print.")
+            return
+        
+        # after all checks generate the print
+        self.names_and_numbers_list = self.extract_names_and_numbers(self.selected_file_path)
+        print(self.names_and_numbers_list)
+
+    def extract_names_and_numbers(self, file_path):
+        """
+        Extracts names and numbers from all sheets in an Excel file.
+        
+        Args:
+            file_path (str): Path to the Excel file.
+            
+        Returns:
+            list: A list of tuples containing name and number pairs from all sheets.
+        """
+        # Read all sheets into a dictionary (sheet_name=None reads all sheets)
+        sheets_dict = pd.read_excel(file_path, sheet_name=None, dtype=str, header=None)  # Read as strings without headers
+
+        # Initialize an empty list to store the tuples
+        result_list = []
+
+        # Iterate over each sheet
+        for sheet_name, df in sheets_dict.items():
+            # Drop rows with any NaN values
+            df_cleaned = df.dropna()
+
+            # Iterate over each row and look for potential name-number pairs
+            for index, row in df_cleaned.iterrows():
+                # Iterate through each pair of columns in the row to detect name and number
+                for i in range(len(row)-1):
+                    # Heuristic: Assume a "name" is a string and the next value is a "number" (numeric string)
+                    if isinstance(row[i], str) and isinstance(row[i+1], (str, int, float)):
+                        try:
+                            # Try to interpret the second value as a number (preserve leading zeros)
+                            number = str(int(float(row[i+1])))  # Handle float-like numbers
+                            name = row[i]
+                            result_list.append((name, row[i+1]))
+                        except ValueError:
+                            # If it cannot be converted to a valid number, skip the pair
+                            continue
+
+        return result_list
 
     def on_closing(self):
         """
