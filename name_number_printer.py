@@ -1,8 +1,8 @@
-from settings import *  
+from settings import *
 
 
 class PrintNameNumber:
-    def __init__(self, root, progress_var, status_label, style=None, page_size=PAGE_SIZE, 
+    def __init__(self, root, progress_var, status_label, popup, style=None, page_size=PAGE_SIZE,
                  max_width=MAX_WIDTH, name_number_list=None, print_color="black", output_directory=None):
         
         if isinstance(page_size, dict):
@@ -14,6 +14,7 @@ class PrintNameNumber:
             raise ValueError("Name and number list is required.")
 
         self.root = root
+        self.popup = popup  # Store the popup window
         self.progress_var = progress_var
         self.status_label = status_label
         self.style = style
@@ -95,7 +96,11 @@ class PrintNameNumber:
     def generate_prints(self):
         total = len(self.name_number_list)
         self.progress_var.set(0)
-        self.status_label.config(text="Starting...")  # Show initial message
+
+        # Ensure the status_label exists before trying to update it
+        if hasattr(self, 'status_label') and self.status_label.winfo_exists():
+            self.status_label.config(text="Starting...")  # Show initial message
+
         self.root.update_idletasks()  # Force UI update
 
         for i, (name, number) in enumerate(self.name_number_list, start=1):
@@ -107,38 +112,64 @@ class PrintNameNumber:
             # Update progress bar and status text
             progress = int((i / total) * 100)
             self.progress_var.set(progress)
-            self.status_label.config(text=f"Generating {i}/{total}...")
+
+            # Ensure the status_label exists before updating
+            if hasattr(self, 'status_label') and self.status_label.winfo_exists():
+                self.status_label.config(text=f"Generating {i}/{total}...")
 
             self.root.update_idletasks()  # Ensure real-time UI updates
 
         # Final update after all images are generated
         self.progress_var.set(100)
-        self.status_label.config(text="Done!")  # Show completion message
-        self.root.update_idletasks()
+
+        # Ensure the status_label exists before updating
+        if hasattr(self, 'status_label') and self.status_label.winfo_exists():
+            self.status_label.config(text="Done!")  # Show completion message
 
 
-# Tkinter GUI
-root = tk.Tk()
-root.title("Image Generator")
+def show_progress_popup(root, name_number_list):
+    # Create a popup window
+    popup = tk.Toplevel(root)
+    popup.title("Progress")
+    popup.geometry("350x150")
+    popup.transient(root)  # Keeps popup on top
+    popup.grab_set()  # Prevents interaction with main window
 
-frame = tk.Frame(root, padx=10, pady=10)
-frame.pack(pady=20)
+    # Center popup on screen
+    popup.update_idletasks()
+    x = root.winfo_x() + (root.winfo_width() // 2) - (350 // 2)
+    y = root.winfo_y() + (root.winfo_height() // 2) - (150 // 2)
+    popup.geometry(f"+{x}+{y}")
 
-progress_var = tk.IntVar()
+    # Progress Bar UI
+    progress_var = tk.IntVar()
 
-progress_label = tk.Label(frame, text="Progress:", font=("Arial", 12))
-progress_label.pack()
+    progress_label = tk.Label(popup, text="Progress:", font=("Arial", 12))
+    progress_label.pack()
 
-progress_bar = ttk.Progressbar(frame, orient="horizontal", length=300, mode="determinate", variable=progress_var)
-progress_bar.pack(pady=10)
+    progress_bar = ttk.Progressbar(popup, orient="horizontal", length=300, mode="determinate", variable=progress_var)
+    progress_bar.pack(pady=10)
 
-status_label = tk.Label(frame, text="Initializing...", font=("Arial", 10))
-status_label.pack()
+    status_label = tk.Label(popup, text="Initializing...", font=("Arial", 10))
+    status_label.pack()
 
-# Image generation starts automatically when the object is created!
-name_number_list = [('CHETAN', '7'), ('PRATHAP', '6'), ('KUSHAL', '19'), ('ANANTH', '3')]
+    # Initialize PrintNameNumber for each style
+    for style in STYLES.keys():
+        PrintNameNumber(root, progress_var, status_label, popup, style=style, name_number_list=name_number_list,
+                        output_directory=f"samples/{style}")
 
-for style in STYLES.keys():
-    PrintNameNumber(root, progress_var, status_label, style=style, name_number_list=name_number_list, output_directory=f"samples/{style}")
+    popup.mainloop()
 
-root.mainloop()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title("Image Generator")
+
+    # Button to start process
+    generate_button = tk.Button(root, text="Generate Images", command=lambda: show_progress_popup(root, [
+        ('CHETAN', '7'), ('PRATHAP', '6'), ('KUSHAL', '19'), ('ANANTH', '3')
+    ]), font=("Arial", 12), padx=10, pady=5)
+
+    generate_button.pack(pady=20)
+
+    root.mainloop()
