@@ -1,4 +1,5 @@
 from settings import *
+from name_number_printer import PrintNameNumber
 
 
 class App(ctk.CTk):
@@ -113,7 +114,7 @@ class App(ctk.CTk):
         self.load_styles()
 
         # Button to generate prints
-        self.generate_btn = ctk.CTkButton(master=self, text="Generate", font=('Arial', 14), command=self.generate_print)
+        self.generate_btn = ctk.CTkButton(master=self, text="Generate", font=('Arial', 14), command=self.on_generate)
         self.generate_btn.pack(pady=(10,20))
 
     def on_canvas_configure(self, event):
@@ -215,7 +216,7 @@ class App(ctk.CTk):
             self.output_path.delete(0, "end")
             self.output_path.insert(0, self.output_folder_path)
 
-    def generate_print(self):
+    def on_generate(self):
         # check if it is a excel file
         _, ext = os.path.splitext(self.selected_file_path)
         isexcel = ext.lower() in (".xls", ".xlsx")
@@ -228,15 +229,17 @@ class App(ctk.CTk):
             messagebox.showerror("Error", "Invalid folder path or no folder selected!")
             return
         # get color
-        color = self.color_combobox.get()
+        self.print_color = self.color_combobox.get()
         # check style
         if not self.selected_style:
             messagebox.showerror("Error", "Select a style to print.")
             return
         
-        # after all checks generate the print
+        # after all checks extract the names and numbers from the excel file
         self.names_and_numbers_list = self.extract_names_and_numbers(self.selected_file_path)
-        print(self.names_and_numbers_list)
+
+        # generate prints
+        self.generate_prints()
 
     def extract_names_and_numbers(self, file_path):
         """
@@ -275,6 +278,37 @@ class App(ctk.CTk):
                             continue
 
         return result_list
+    
+    def generate_prints(self):
+        # Create a popup window
+        popup = tk.Toplevel(self)
+        popup.title("Progress")
+        popup.geometry("350x150")
+        popup.transient(self)  # Keeps popup on top
+        popup.grab_set()  # Prevents interaction with main window
+
+        # Center popup on screen
+        popup.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width() // 2) - (350 // 2)
+        y = self.winfo_y() + (self.winfo_height() // 2) - (150 // 2)
+        popup.geometry(f"+{x}+{y}")
+
+        # Progress Bar UI
+        progress_var = tk.IntVar()
+
+        progress_label = tk.Label(popup, text="Progress:", font=("Arial", 12))
+        progress_label.pack()
+
+        progress_bar = ttk.Progressbar(popup, orient="horizontal", length=300, mode="determinate", variable=progress_var)
+        progress_bar.pack(pady=10)
+
+        status_label = tk.Label(popup, text="Initializing...", font=("Arial", 10))
+        status_label.pack()
+
+        # Initialize PrintNameNumber 
+        PrintNameNumber(self, progress_var, status_label, popup, style=self.selected_style, print_color=self.print_color, name_number_list=self.names_and_numbers_list, output_directory=self.output_folder_path)
+
+        popup.mainloop()
 
     def on_closing(self):
         """
