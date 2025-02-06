@@ -125,7 +125,7 @@ class App(ctk.CTk):
         """Reset the scroll region to encompass the inner frame"""
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
-    def load_styles(self, folder_path="styles"):
+    def load_styles(self, folder_path=STYLES_FOLDER):
         # Get the path of all the images
         images = [file for file in os.listdir(folder_path)]
 
