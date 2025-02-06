@@ -1,3 +1,5 @@
 __pycache__/
 samples/
 *.xlsx
+*.exe
+*.lnk
